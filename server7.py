@@ -42,11 +42,13 @@ logging.basicConfig(level=logging.INFO)
 logging.getLogger("coap-server").setLevel(logging.DEBUG)
 
 # setup http app
-# http_app = web.Application()
-# http_app.add_routes([web.get('/', index)])
-# # setup event loop for http
+http_app = web.Application()
+http_app.add_routes([web.get('/test', index)])
+http_app.router.add_static('/', path=str(project_root / 'static'), name='static')
+
+# setup event loop for http
 loop = asyncio.get_event_loop()
-# loop.create_task(start_site(http_app, port=8080))
+loop.create_task(start_site(http_app, port=8080))
 
 # setup coap server
 root = resource.Site()

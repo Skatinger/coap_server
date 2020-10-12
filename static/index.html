@@ -10,6 +10,9 @@
     <!-- Compiled and minified JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
+    <!-- d3 js -->
+    <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+
 
     <title>Thingy:91 API Client</title>
 
@@ -31,20 +34,28 @@
         flex: 1 0 auto;
       }
 
-      .tabs .tab a.active {
+      .tabs.mytabs .tab a.active {
         background-color: #0094d6;
       }
 
-      .tabs .indicator {
+      .tabs.mytabs .indicator {
         background-color: #027fb7;
       }
 
-      .btn {
+      .btn.mybtn {
         background-color: #0094d6;
       }
 
-      .btn:hover {
+      .btn.mybtn:hover {
         background-color: #0094d6;
+      }
+
+      .tab-content {
+        height: 800px;
+      }
+
+      .page-footer {
+        padding-top: 0px;
       }
 
     </style>
@@ -57,11 +68,14 @@
       <h1>Thingy:91 API Client</h1>
       <div class="row">
         <h5>Description</h5>
+        <p>This client allows to read all data collected by the prototyping plattform thingy:91. Data is updated everytime new data points arrive.
+          The color for the LED on the thingy:91 can be changed using the provided form.
+        </p>
       </div>
 
       <div class="row">
         <h5>Actions</h5>
-        <p>This client allows to change the color of the Thingy:91 LED. The update is performed via an observe event.</p>
+        <p>Change the color of the Thingy:91 LED. The update is performed via an observe event.</p>
       </div>
       <div class="row">
         <div class="col s2">
@@ -88,7 +102,7 @@
 
         </div>
         <div class="s2">
-        <button type="button" class="btn" name="button" style="margin-top: 17px;">Change LED Color</button>
+        <button type="button" class="btn mybtn waves-effect" name="button" style="margin-top: 17px;">Change LED Color</button>
         <script>
           $(document).ready(function(){
             $(".btn").on("click", function(event){
@@ -118,7 +132,7 @@
         <p>All data collected from the connected thingy is displayed here</p>
         <div class="row">
           <!-- <div class="col s12"> -->
-            <ul class="tabs light-blue accent-3">
+            <ul class="tabs mytabs light-blue accent-3">
               <li class="tab col s3 white-text"><a href="#test1" class="active white-text">Temperature</a></li>
               <li class="tab col s3"><a class="white-text" href="#test2">Other data?</a></li>
               <li class="tab col s3"><a class="white-text" href="#test3">C02</a></li>
@@ -132,7 +146,48 @@
               });
             </script>
           </div>
-          <div id="test2" class="col s12">Test 2</div>
+          <div id="test2" class="col s12">
+            <div id="wrapper">
+            <script>
+            $(document).ready(function(){
+            var width = 10240,
+            height = 1024,
+            svg = d3.select("#wrapper")
+            .attr("style", "padding-bottom: " + Math.ceil(height * 100 / width) + "%")
+            .append("svg")
+            .attr("viewBox", "0 0 " + width + " " + height);
+
+            var x = d3.scaleLinear().rangeRound([0, width]);
+            var y = d3.scaleLinear().rangeRound([height, 0]);
+
+            var spaceDsvParser = d3.dsvFormat(' ');
+            d3.request("/media/post/d3-time-series-example/timeseries.csv")
+            .mimeType("text/csv")
+            .response(function(xhr) { return spaceDsvParser.parse(xhr.responseText); })
+            .get(function(error, data) {
+              if (error) throw error;
+
+              x.domain([0, data.length]);
+              y.domain([-16, 16]);
+
+              var drawAxis = function(yValueCallback, color) {
+                svg.append('path')
+                .datum(data)
+                .attr("fill", "none")
+                .attr("stroke", color)
+                .attr("stroke-linejoin", "round")
+                .attr("stroke-linecap", "round")
+                .attr("stroke-width", 5)
+                .attr("d", d3.line().x(function(d) { return x(d.t); }).y(yValueCallback));
+              };
+              drawAxis(function(d) { return y(d.x); }, "blue");
+              drawAxis(function(d) { return y(d.y); }, "red");
+              drawAxis(function(d) { return y(d.z); }, "green");
+            });
+          });
+            </script>
+            </div>
+          </div>
           <div id="test3" class="col s12">Test 3</div>
           <div id="test4" class="col s12">Test 4</div>
         </div>
@@ -146,23 +201,16 @@
 
 
     <footer class="page-footer light-blue accent-3">
-          <div class="container">
-            <div class="row">
-              <!-- <div class="col l6 s12">
-                <h5 class="white-text">Footer Content</h5>
-                <p class="grey-text text-lighten-4"></p>
-              </div> -->
-              <div class="col s12">
-                <h5 class="white-text">Links</h5>
-                <ul>
-                  <li><a class="grey-text text-lighten-3" href="#!">Documentation</a></li>
-                  <li><a class="grey-text text-lighten-3" href="#!">Github Link</a></li>
-                </ul>
-              </div>
-            </div>
-          </div>
           <div class="footer-copyright">
             <div class="container">
+              <div class="left">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                  <a class="grey-text text-lighten-3" href="https://github.com/Skatinger/sdk-nrf/tree/new_approach" style="position: absolute; margin-left: 5px;">
+                    view on Github
+                  </a>
+                <!-- </ul> -->
+              </div>
             <div class="right">© 2020 Alex Nyffenegger</div>
             <!-- <a class="grey-text text-lighten-4 right" href="#!">M</a> -->
             </div>

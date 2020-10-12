@@ -4,6 +4,7 @@ import datetime
 import logging
 import asyncio
 import aiocoap.resource as resource
+import aiohttp_cors
 import aiocoap
 import datetime
 import json
@@ -19,8 +20,16 @@ async def start_site(app, port, address='0.0.0.0'):
     site = web.TCPSite(runner, address, port)
     await site.start()
 
+# returns static file with a websocket to poll data / send data
 async def index(request):
-	return web.Response(text="hello from http server")
+    return web.FileResponse('./static/index.html')
+
+async def sensor_data(request):
+    return json_response("{thisisimepty}")
+
+async def update_led(request):
+    # todo parse hex color, then notify LED
+    LedResource().notify()
 
 class CustomResource(resource.Resource):
     def __init__(self):
@@ -114,9 +123,20 @@ logging.getLogger("coap-server").setLevel(logging.DEBUG)
 
 # setup http app
 http_app = web.Application()
-http_app.add_routes([web.get('/test', index)])
-# http_app.add_routes([web.static('/', 'index.html')])
-http_app.router.add_static('/', path='/app/static/', name='index')
+
+
+# Configure default CORS settings.
+cors = aiohttp_cors.setup(http_app, defaults={
+    "*": aiohttp_cors.ResourceOptions(
+            allow_credentials=True,
+            expose_headers="*",
+            allow_headers="*",
+            allow_methods="*",
+        )
+})
+
+cors.add(http_app.router.add_get('/', index))
+cors.add(http_app.router.add_get('/update_led/{hexcolor}', update_led))
 
 
 # setup event loop for http

@@ -7,38 +7,41 @@ import aiocoap.resource as resource
 import aiohttp_cors
 import aiocoap
 import datetime
+import aiomysql
 import json
 import random
 from aiohttp import web
+import database
+
 
 
 # connects to db, saves a connector the the app dict
-# async def init_db(app):
-#     connection = await aiomysql.connect(
-#         host='db',
-#         user='root',
-#         password='1324',
-#         db='db',
-#         loop=app.loop)
-#     if connection:
-#         print("got db connection:" + str(connection))
-#     app['db'] = connection
-#
-# async def setup_db(app):
-#     conn = app['db']
-#     cur = await conn.cursor()
-#     try:
-#         query = ('''CREATE TABLE `db`.`temperature` (
-#                     `id` INT NOT NULL AUTO_INCREMENT,
-#                     `title` VARCHAR(45) NOT NULL,
-#                     `completed` INT NOT NULL,
-#                     `order` INT NOT NULL,
-#                     PRIMARY KEY (`id`));''')
-#         await cur.execute(query)
-#         await self.connector.commit()
-#         await cur.close()
-#     except:
-#         return
+async def init_db(app):
+    connection = await aiomysql.connect(
+        host='db',
+        user='root',
+        password='1324',
+        db='db',
+        loop=app.loop)
+    if connection:
+        print("got db connection:" + str(connection))
+    app['db'] = connection
+
+async def setup_db(app):
+    conn = app['db']
+    cur = await conn.cursor()
+    try:
+        query = ('''CREATE TABLE `db`.`temperature` (
+                    `id` INT NOT NULL AUTO_INCREMENT,
+                    `title` VARCHAR(45) NOT NULL,
+                    `completed` INT NOT NULL,
+                    `order` INT NOT NULL,
+                    PRIMARY KEY (`id`));''')
+        await cur.execute(query)
+        await self.connector.commit()
+        await cur.close()
+    except:
+        return
 
 runners = []
 async def start_site(app, port, address='0.0.0.0'):
@@ -60,7 +63,12 @@ async def update_led(request):
     LedResource().notify()
 
 async def get_temperature(request):
-    return web.json_response([['2013-10-04 22:23:00', '2013-11-04 22:23:00', '2013-12-04 22:23:00'], [1, 3, 6]])
+    conn = request.app['db']
+    data = await database.DBConnector(conn).fetchall("temperature")
+    print("DB is:")
+    print(data)
+    # return web.json_response([['2013-10-04 22:23:00', '2013-11-04 22:23:00', '2013-12-04 22:23:00'], [1, 3, 6]])
+    return web.json_response(data)
 
 async def get_co2(request):
     return web.json_response([['2013-10-04 22:23:00', '2013-11-04 22:23:00', '2013-12-04 22:23:00'], [198, 301, 255]])
@@ -175,9 +183,10 @@ cors.add(http_app.router.add_get('/temperature', get_temperature))
 cors.add(http_app.router.add_get('/co2', get_co2))
 
 
+
 #db setup
-# init_db(http_app)
-# setup_db(http_app)
+# await init_db(http_app)
+# await setup_db(http_app)
 
 # def database_setup(http_app):
 #     await init_db(http_app)
@@ -185,6 +194,11 @@ cors.add(http_app.router.add_get('/co2', get_co2))
 
 # setup event loop for http
 loop = asyncio.get_event_loop()
+loop.run_until_complete(init_db(http_app))
+loop.run_until_complete(setup_db(http_app))
+
+
+
 loop.create_task(start_site(http_app, port=8080))
 
 # setup coap server

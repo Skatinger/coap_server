@@ -10,4 +10,4 @@ ADD ./ $APP_HOME/
 RUN apt-get update
 RUN apt-get install nano
 
-RUN pip3 install aiohttp aiocoap aiohttp-cors
+RUN pip3 install aiohttp aiocoap aiohttp-cors aiomysql

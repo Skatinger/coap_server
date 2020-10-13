@@ -37,6 +37,14 @@
         flex: 1 0 auto;
       }
 
+      .tabs.mytabs {
+        height: 32px;
+      }
+
+      .tabs.mytabs .tab {
+        line-height: 32px;
+      }
+
       .tabs.mytabs .tab a.active {
         background-color: #0094d6;
       }
@@ -59,7 +67,24 @@
 
       .page-footer {
         padding-top: 0px;
+        position: fixed;
+        width: 100%;
+        bottom: 0px;
       }
+
+      .color-select {
+        padding-left: 50px;
+        padding-top: 5px;
+        position: relative;
+      }
+
+      .color-select label {
+        position: absolute;
+        top: -15px;
+        left: 65px;
+      }
+
+
 
     </style>
 
@@ -70,19 +95,21 @@
     <div class="container content">
       <h1>Thingy:91 API Client</h1>
       <div class="row">
+        <div class="col s6">
         <h5>Description</h5>
         <p>This client allows to read all data collected by the prototyping plattform thingy:91. Data is updated everytime new data points arrive.
           The color for the LED on the thingy:91 can be changed using the provided form.
         </p>
       </div>
 
-      <div class="row">
+      <div class="col s6">
         <h5>Actions</h5>
-        <p>Change the color of the Thingy:91 LED. The update is performed via an observe event.</p>
-      </div>
-      <div class="row">
-        <div class="col s2">
-          <form action="#">
+          <p>Change the color of the Thingy:91 LED. The update is performed via an observe event.</p>
+        <!-- <div class="col s3"></div> -->
+      <!-- </div> -->
+      <div class="row" style="padding-top: 15px;">
+        <form class="color-select" action="#">
+        <div class="col s4">
             <label for="test5">Select LED color</label>
             <!-- <p class="range-field"> -->
             <input type="color" id="range-field" name="favcolor" value="#ff0000" style="width: 120px; height: 30px; padding-top: 0px;">
@@ -104,30 +131,38 @@
           </script> -->
 
         </div>
-        <div class="s2">
-        <button type="button" class="btn mybtn waves-effect" name="button" style="margin-top: 17px;">Change LED Color</button>
+        <div class="s6">
+        <button type="button" onclick="changeColor()" class="btn mybtn waves-effect" name="button">Change LED Color</button>
         <script>
-          $(document).ready(function(){
-            $(".btn").on("click", function(event){
-              console.log($(event.target));
-              // send ajax request
-              $.ajax({
-                url: 'localhost:4100/update_led/444', // + $("#range-field").val(),
-                type: 'GET',
-                success: function(res){
-                  // materialize toast
-                },
-                error: function(res){
-                  console.log("didnt work");
-                }
-              })
+          function changeColor(){
+            $(".progress").show();
+            // send ajax request
+            $.ajax({
+              url: 'localhost:4100/update_led/444' + $("#range-field").val(),
+              type: 'GET',
+              success: function(res){
+                // materialize toast
+                $(".progress").hide();
+                 M.toast({html: 'Color updated!'})
+              },
+              error: function(res){
+                 M.toast({html: 'Whoops, there was a problem.'})
+              }
             });
-          });
+          }
+
 
         </script>
       </div>
+      <div class="row">
+        <div class="progress" style="width: 80%; margin-top: 20px; display: none;">
+      <div class="indeterminate"></div>
+  </div>
+      </div>
     </form>
       </div>
+    </div>
+    </div>
 
 
       <div class="row">

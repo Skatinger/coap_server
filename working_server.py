@@ -31,13 +31,41 @@ async def setup_db(app):
     conn = app['db']
     cur = await conn.cursor()
     try:
-        query = ('''CREATE TABLE `db`.`temperature` (
-                    `id` INT NOT NULL AUTO_INCREMENT,
-                    `title` VARCHAR(45) NOT NULL,
-                    `completed` INT NOT NULL,
-                    `order` INT NOT NULL,
-                    PRIMARY KEY (`id`));''')
-        await cur.execute(query)
+        queries = []
+        queries.append('''CREATE TABLE `temperature` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `celcius` float DEFAULT NULL,
+          `time` datetime DEFAULT NULL,
+          PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;''')
+        # queries.append('''CREATE TABLE `humidity` (
+        #   `id` int(11) NOT NULL AUTO_INCREMENT,
+        #   `celcius` float DEFAULT NULL,
+        #   `time` datetime DEFAULT NULL,
+        #   PRIMARY KEY (`id`)
+        # ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;''')
+        # queries.append('''CREATE TABLE `temperature` (
+        #   `id` int(11) NOT NULL AUTO_INCREMENT,
+        #   `celcius` float DEFAULT NULL,
+        #   `time` datetime DEFAULT NULL,
+        #   PRIMARY KEY (`id`)
+        # ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;''')
+        # queries.append('''CREATE TABLE `temperature` (
+        #   `id` int(11) NOT NULL AUTO_INCREMENT,
+        #   `celcius` float DEFAULT NULL,
+        #   `time` datetime DEFAULT NULL,
+        #   PRIMARY KEY (`id`)
+        # ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;''')
+        # queries.append('''CREATE TABLE `temperature` (
+        #   `id` int(11) NOT NULL AUTO_INCREMENT,
+        #   `celcius` float DEFAULT NULL,
+        #   `time` datetime DEFAULT NULL,
+        #   PRIMARY KEY (`id`)
+        # ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;''')
+
+
+        for query in queries:
+            await cur.execute(query)
         await self.connector.commit()
         await cur.close()
     except:
@@ -55,24 +83,19 @@ async def start_site(app, port, address='0.0.0.0'):
 async def index(request):
     return web.FileResponse('./static/index.html')
 
-async def sensor_data(request):
-    return web.json_response("{thisisimepty}")
-
 async def update_led(request):
     # todo parse hex color, then notify LED
     LedResource().notify()
 
-async def get_temperature(request):
+async def get_measurment(request):
+    type = request.match_info.get('measurement')
     conn = request.app['db']
-    data = await database.DBConnector(conn).fetchall("temperature")
-    print("DB is:")
+    data = await database.DBConnector(conn).fetchall(type)
     print(data)
-    # return web.json_response([['2013-10-04 22:23:00', '2013-11-04 22:23:00', '2013-12-04 22:23:00'], [1, 3, 6]])
     return web.json_response(data)
 
-async def get_co2(request):
-    return web.json_response([['2013-10-04 22:23:00', '2013-11-04 22:23:00', '2013-12-04 22:23:00'], [198, 301, 255]])
 
+# COAP SERVER =============================================
 class CustomResource(resource.Resource):
     def __init__(self):
         super().__init__()
@@ -179,18 +202,8 @@ cors = aiohttp_cors.setup(http_app, defaults={
 
 cors.add(http_app.router.add_get('/', index))
 cors.add(http_app.router.add_get('/update_led/{hexcolor}', update_led))
-cors.add(http_app.router.add_get('/temperature', get_temperature))
-cors.add(http_app.router.add_get('/co2', get_co2))
+cors.add(http_app.router.add_get('/{measurement}', get_measurment))
 
-
-
-#db setup
-# await init_db(http_app)
-# await setup_db(http_app)
-
-# def database_setup(http_app):
-#     await init_db(http_app)
-#     await setup_db(http_app)
 
 # setup event loop for http
 loop = asyncio.get_event_loop()

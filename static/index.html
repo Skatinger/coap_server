@@ -88,6 +88,15 @@
         margin-bottom: 0px;
       }
 
+      a.disabled {
+        opacity: 0.6;
+      }
+
+      div.error {
+        margin-left: 40%;
+        margin-top: 100px;
+      }
+
 
 
     </style>
@@ -101,7 +110,7 @@
       <div class="row no-bottom-margin">
         <div class="col s6">
         <h5>Description</h5>
-        <p>This client allows to read all data collected by the prototyping plattform thingy:91. Data is updated everytime new data points arrive.
+        <p>This client allows to read all data collected by the prototyping plattform thingy:91. Data is updated automatically.
           The color for the LED on the thingy:91 can be changed using the provided form.
         </p>
       </div>
@@ -175,16 +184,19 @@
         <div class="row">
           <!-- <div class="col s12"> -->
             <ul class="tabs mytabs light-blue accent-3">
-              <li class="tab col s3 white-text"><a href="#temperature" class="active white-text">Temperature [°C]</a></li>
-              <li class="tab col s3"><a class="white-text" href="#test2">Other data?</a></li>
-              <li class="tab col s3"><a class="white-text" href="#test3">C02</a></li>
-              <li class="tab col s3"><a class="white-text" href="#test4">Whatever</a></li>
+              <li class="tab col s2 white-text"><a href="#temperature" class="active white-text">Temperature [°C]</a></li>
+              <li class="tab col s2"><a class="white-text" href="#humidity">Humidity</a></li>
+              <li class="tab col s2"><a class="white-text" href="#air_pressure">Air Pressure</a></li>
+              <li class="tab col s2"><a class="white-text" href="#co2">CO2</a></li>
+              <li class="tab col s2 disabled"><a class="white-text disabled" href="#gps">GPS</a></li>
+              <li class="tab col s2 disabled"><a class="white-text disabled" href="#flip">Flip</a></li>
             </ul>
           <!-- </div> -->
           <div id="temperature" class="tab-content col s12" style="height: 400px;"></div>
-          <div id="test2" class="tab-content col s12" style="height: 400px;"></div>
-          <div id="test3" class="tab-content col s12" style="height: 400px;"></div>
-          <div id="test4" class="tab-content col s12" style="height: 400px;"></div>
+          <div id="humidity" class="tab-content col s12" style="height: 400px;"></div>
+          <div id="air_pressure" class="tab-content col s12" style="height: 400px;"></div>
+          <div id="co2" class="tab-content col s12" style="height: 400px;"></div>
+          <li id="gps" class="tab-content col s12" style="height: 400px;"><a class="white-text">Whatever</a></li>
         </div>
 
       </div>
@@ -241,21 +253,36 @@
       return [{x: xAxis, y: yAxis, type: 'scatter'}];
     }
 
+    // automatically refreshed every 15 seconds if request was sucessful
     function getMeasurement(type){
-      $("#" + type).html(getPreloader());
+      // $("#" + type).html(getPreloader());
       $.ajax({
         url: "http://localhost:4100/" + type,
         type: "GET",
         success: function(res){
-          console.log(res);
           plotData(type, processData(res));
+          setTimeout(getMeasurement, 15000, type);
+        },
+        error: function(){
+          $("#" + type).html("<div class='error'><h6>Whoops, could not load data :(</h6></div>");
         }
       });
     }
 
     function plotData(container, data){
-      $("#" + container).html("");
-      Plotly.newPlot(container, data);
+      console.log(data);
+      if($("#" + container).hasClass("initialized")){
+        console.log("inited");
+        let $container = $("#" + container);
+        $container[0].data[0].x = data[0].x;
+        $container[0].data[0].y = data[0].y;
+        Plotly.redraw(container);
+      } else {
+        console.log("ELSE");
+        $("#" + container).html("");
+        $("#" + container).addClass("initialized");
+        Plotly.newPlot(container, data);
+      }
     }
 
     $(document).ready(function() {
@@ -263,10 +290,11 @@
 
       $(".tab-content").html(getPreloader());
 
-      let measurements = ['temperature'];
+      let measurements = ['temperature', 'humidity'];
 
       $.each(measurements, function(index, measurement){
-        let data = getMeasurement(measurement);
+        $("#" + measurement).html(getPreloader());
+        getMeasurement(measurement);
       });
     });
 

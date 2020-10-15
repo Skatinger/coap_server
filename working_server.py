@@ -21,8 +21,7 @@ async def init_db(app):
         host='db',
         user='root',
         password='1324',
-        db='db',
-        loop=app.loop)
+        db='db')
     if connection:
         print("got db connection:" + str(connection))
     app['db'] = connection
@@ -85,7 +84,13 @@ async def index(request):
 
 async def update_led(request):
     # todo parse hex color, then notify LED
-    LedResource().notify()
+    color = request.match_info.get('hexcolor')
+    print("GOT COLOR: " + color)
+    if(len(color) != 6):
+      return
+    LedResource().update_resource(color)
+    # LedResource().notify()
+    return web.json_response({'color': color})
 
 async def get_measurment(request):
     type = request.match_info.get('measurement')
@@ -126,22 +131,26 @@ class LedResource(resource.ObservableResource):
         self.color = "ffffff"
 
     def notify(self):
-        self.update_resource()
+        # self.update_resource("")
         self.updated_state()
-        self.reschedule()
+        # self.reschedule()
 
-    def update_resource(self):
-        colors = ["ff0000", "ebe134", "abcdef", "ffffff", "gggggg"]
-        self.color = random.choice(colors)
+    def update_resource(self, color):
+        # if(len(color) == 0):
+            # colors = ["ff0000", "ebe134", "abcdef", "ffffff", "gggggg"]
+            # self.color = random.choice(colors)
+        # else:
+        self.color = color
+        self.notify()
 
     # during testing we call this, once the server runs we send messages from http_app
     # to trigger a notify instead of calling it here
-    def reschedule(self):
-        self.handle = asyncio.get_event_loop().call_later(5, self.notify)
+    # def reschedule(self):
+        # self.handle = asyncio.get_event_loop().call_later(5, self.notify)
 
-    def update_observation_count(self, count):
-        if count and self.handle is None:
-            self.reschedule()
+    # def update_observation_count(self, count):
+    #     if count and self.handle is None:
+    #         self.reschedule()
 
 
     async def render_get(self, request):

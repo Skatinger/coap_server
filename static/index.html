@@ -149,9 +149,10 @@
         <script>
           function changeColor(){
             $(".progress").show();
+            let color = $("#range-field").val().substring(1);
             // send ajax request
             $.ajax({
-              url: 'localhost:4100/update_led/444' + $("#range-field").val(),
+              url: 'http://localhost:4100/update_led/' + color,
               type: 'GET',
               success: function(res){
                 // materialize toast

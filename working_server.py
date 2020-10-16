@@ -13,9 +13,13 @@ import random
 from aiohttp import web
 import database
 
+# define global variable to store LedResource instance to call its notify function
+# cant use the class instance directly as it has to be initialized in a server context
+led_resource = None
+# same for number of observers
+obs_count = 0
 
-
-# connects to db, saves a connector the the app dict
+# connects to db, saves a connector to the http app dict
 async def init_db(app):
     connection = await aiomysql.connect(
         host='db',
@@ -23,9 +27,10 @@ async def init_db(app):
         password='1324',
         db='db')
     if connection:
-        print("got db connection:" + str(connection))
+        print("got database connection:" + str(connection))
     app['db'] = connection
 
+# creates all tables necessary for this application if not yet present
 async def setup_db(app):
     conn = app['db']
     cur = await conn.cursor()
@@ -70,6 +75,7 @@ async def setup_db(app):
     except:
         return
 
+# uses runners to run http site. Setup to add more http apps
 runners = []
 async def start_site(app, port, address='0.0.0.0'):
     runner = web.AppRunner(app)
@@ -82,14 +88,14 @@ async def start_site(app, port, address='0.0.0.0'):
 async def index(request):
     return web.FileResponse('./static/index.html')
 
+# response is wether thingy is observing
+async def thingy_status(request):
+    return web.json_response({"online": obs_count > 0})
+
+# receives hexcolor, notifies ledResource (ObservableResource)
 async def update_led(request):
-    # todo parse hex color, then notify LED
     color = request.match_info.get('hexcolor')
-    print("GOT COLOR: " + color)
-    if(len(color) != 6):
-      return
-    LedResource().update_resource(color)
-    # LedResource().notify()
+    led_resource.notify(color)
     return web.json_response({'color': color})
 
 async def get_measurment(request):
@@ -126,37 +132,26 @@ class LedResource(resource.ObservableResource):
 
     def __init__(self):
         super().__init__()
+        # save this resource to global variable to be able to call notify
+        # method from http server
+        global led_resource
+        led_resource = self
 
-        self.handle = None
-        self.color = "ffffff"
+        # set default color red
+        self.color = "ff0000"
 
-    def notify(self):
-        # self.update_resource("")
-        self.updated_state()
-        # self.reschedule()
+    def update_observation_count(self, newcount):
+        global obs_count
+        obs_count = newcount
 
-    def update_resource(self, color):
-        # if(len(color) == 0):
-            # colors = ["ff0000", "ebe134", "abcdef", "ffffff", "gggggg"]
-            # self.color = random.choice(colors)
-        # else:
+    # called with the updated color, updates state and notifies observers
+    def notify(self, color):
         self.color = color
-        self.notify()
+        self.updated_state()
 
-    # during testing we call this, once the server runs we send messages from http_app
-    # to trigger a notify instead of calling it here
-    # def reschedule(self):
-        # self.handle = asyncio.get_event_loop().call_later(5, self.notify)
-
-    # def update_observation_count(self, count):
-    #     if count and self.handle is None:
-    #         self.reschedule()
-
-
+    # render observe resource, get rendered on every state update (notify())
     async def render_get(self, request):
-        print("COLOR IS:")
-        print("sdfasdfasdf" + self.color)
-        payload = ("{\"appId\":\"LED\",\"data\":{\"color\":\"" + self.color + "\"},\"messageType\":\"CFG_SET\"}").encode("utf-8")
+        payload = ("{\"appId\":\"LED\",\"data\":{\"color\":\"" + self.color + "\"},\"messageType\":\"CFG_SET\"}").encode("ascii")
         return aiocoap.Message(payload=payload)
 
 # used for testing, works
@@ -198,7 +193,6 @@ logging.getLogger("coap-server").setLevel(logging.DEBUG)
 # setup http app
 http_app = web.Application()
 
-
 # Configure default CORS settings.
 cors = aiohttp_cors.setup(http_app, defaults={
     "*": aiohttp_cors.ResourceOptions(
@@ -211,7 +205,8 @@ cors = aiohttp_cors.setup(http_app, defaults={
 
 cors.add(http_app.router.add_get('/', index))
 cors.add(http_app.router.add_get('/update_led/{hexcolor}', update_led))
-cors.add(http_app.router.add_get('/{measurement}', get_measurment))
+cors.add(http_app.router.add_get('/measurement/{measurement}', get_measurment))
+cors.add(http_app.router.add_get('/thingy_status', thingy_status))
 
 
 # setup event loop for http
@@ -219,8 +214,7 @@ loop = asyncio.get_event_loop()
 loop.run_until_complete(init_db(http_app))
 loop.run_until_complete(setup_db(http_app))
 
-
-
+# create http site task
 loop.create_task(start_site(http_app, port=8080))
 
 # setup coap server
@@ -233,8 +227,6 @@ root.add_resource(['time'], TimeResource())
 
 # creates a context to all addresses on the default coap port
 asyncio.Task(aiocoap.Context.create_server_context(root))
-
-# database_setup(http_app)
 
 try:
     loop.run_forever()

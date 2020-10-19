@@ -101,6 +101,7 @@ async def update_led(request):
 async def get_measurment(request):
     type = request.match_info.get('measurement')
     conn = request.app['db']
+    print("GOT REQUEST, trying to access data")
     data = await database.DBConnector(conn).fetchall(type)
     print(data)
     return web.json_response(data)
@@ -119,9 +120,9 @@ class CustomResource(resource.Resource):
     #     print("woow, cool i received a GET request")
     #     return aiocoap.Message(payload=self.content)
 
-    async def render_put(self, request):
-        print('===== PUT payload: %s' % request.payload.decode("utf-8"))
-        self.set_content( request.payload.decode("utf-8") )
+    async def render_post(self, request):
+        print('===== PUT payload: %s' % request.payload.decode('ascii'))
+        self.set_content( request.payload )
         return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
 
 
@@ -141,6 +142,7 @@ class LedResource(resource.ObservableResource):
         self.color = "ff0000"
 
     def update_observation_count(self, newcount):
+        print("UPDATING GLOBAL obs count to: " + str(newcount))
         global obs_count
         obs_count = newcount
 
@@ -151,6 +153,7 @@ class LedResource(resource.ObservableResource):
 
     # render observe resource, get rendered on every state update (notify())
     async def render_get(self, request):
+        print("rendering get")
         payload = ("{\"appId\":\"LED\",\"data\":{\"color\":\"" + self.color + "\"},\"messageType\":\"CFG_SET\"}").encode("ascii")
         return aiocoap.Message(payload=payload)
 

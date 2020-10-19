@@ -170,8 +170,9 @@
             $(".progress").show();
             let color = $("#range-field").val().substring(1);
             // send ajax request
-            $.ajax({
-              url: 'http://localhost:4100/update_led/' + color,
+	    console.log("sending new color now");
+            $.ajax({// TODO use base url
+              url: 'http://192.168.178.82:4100/update_led/' + color,
               type: 'GET',
               success: function(res){
                 // materialize toast
@@ -279,8 +280,8 @@
     }
 
     function updateThingyStatus(){
-      $.ajax({
-        url: "http://localhost:4100/thingy_status",
+      $.ajax({// TODO use window base url instad of hardcoded ip
+        url: "http://192.168.178.82:4100/thingy_status",
         type: "GET",
         success: function(res){
           console.log("GOT RES:");
@@ -306,8 +307,8 @@
     // automatically refreshed every 15 seconds if request was sucessful
     function getMeasurement(type){
       // $("#" + type).html(getPreloader());
-      $.ajax({
-        url: "http://localhost:4100/measurement/" + type,
+      $.ajax({// TODO use window base url instead of hardcoded IP
+        url: "http://192.168.178.82:4100/measurement/" + type,
         type: "GET",
         success: function(res){
           plotData(type, processData(res));

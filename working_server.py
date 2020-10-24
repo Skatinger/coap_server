@@ -48,7 +48,7 @@ async def setup_db(app):
     cur = await conn.cursor()
     try:
         queries = []
-        queries.append('''CREATE TABLE `temperature` (
+        queries.append('''CREATE TABLE `temp` (
           `id` int(11) NOT NULL AUTO_INCREMENT,
           `celcius` float DEFAULT NULL,
           `time` datetime DEFAULT NULL,

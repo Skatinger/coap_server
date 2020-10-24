@@ -9,6 +9,7 @@ import aiocoap
 import datetime
 import aiomysql
 import json
+import ast
 import random
 from aiohttp import web
 import database
@@ -19,10 +20,21 @@ led_resource = None
 # same for number of observers
 obs_count = 0
 
+
+async def processData(data):
+    opts = ['TEMP', 'HUMID', 'AIR_PRESS', 'LIGHT']
+    data = ast.literal_eval(data) # allows to parse json with single quotes
+    if data["appId"] and data["appId"] in opts:
+        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        query = 'INSERT INTO `db`.`{}` (`value`, `time`) VALUES ({}, "{}")'.format(data["appId"].lower(), data["data"], date)
+        conn = http_app['db']
+        print(query)
+        await database.DBConnector(conn).execute(query)
+
 # connects to db, saves a connector to the http app dict
 async def init_db(app):
     connection = await aiomysql.connect(
-        host='db',
+        host='localhost',# db',
         user='root',
         password='1324',
         db='db')
@@ -122,9 +134,9 @@ class CustomResource(resource.Resource):
 
     async def render_post(self, request):
         print('===== PUT payload: %s' % request.payload.decode('ascii'))
+        await processData(request.payload.decode('ascii'))
         self.set_content( request.payload )
         return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
-
 
 class LedResource(resource.ObservableResource):
     """Example resource that can be observed. The `notify` method keeps
@@ -155,6 +167,7 @@ class LedResource(resource.ObservableResource):
     async def render_get(self, request):
         print("rendering get")
         payload = ("{\"appId\":\"LED\",\"data\":{\"color\":\"" + self.color + "\"},\"messageType\":\"CFG_SET\"}").encode("ascii")
+        # payload = datetime.datetime.now().strftime("%Y-%m-%d %H:%M").encode('ascii') 
         return aiocoap.Message(payload=payload)
 
 # used for testing, works
@@ -218,7 +231,7 @@ loop.run_until_complete(init_db(http_app))
 loop.run_until_complete(setup_db(http_app))
 
 # create http site task
-loop.create_task(start_site(http_app, port=8080))
+loop.create_task(start_site(http_app, port=4100))
 
 # setup coap server
 root = resource.Site()

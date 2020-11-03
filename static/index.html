@@ -341,9 +341,10 @@
 
       $(".tab-content").html(getPreloader());
 
-      let measurements = ['temp', 'humid'];
+      let measurements = []; // TODO add this again['temp', 'humid'];
 
       updateThingyStatus();
+      console.log(measurements);
 
       $.each(measurements, function(index, measurement){
         $("#" + measurement).html(getPreloader());

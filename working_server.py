@@ -34,7 +34,7 @@ async def processData(data):
 # connects to db, saves a connector to the http app dict
 async def init_db(app, loop):
     connection = await aiomysql.create_pool(
-        host='db',# db',
+        host='localhost',# db',
         user='root',
         password='1324',
         db='db',
@@ -133,7 +133,9 @@ class CustomResource(resource.Resource):
     #     print("woow, cool i received a GET request")
     #     return aiocoap.Message(payload=self.content)
 
-    async def render_post(self, request):
+    async def render_put(self, request):
+        print("UGLY PRINT")
+        print(request.payload)
         print('===== PUT payload: %s' % request.payload.decode('ascii'))
         await processData(request.payload.decode('ascii'))
         self.set_content( request.payload )
@@ -167,7 +169,7 @@ class LedResource(resource.ObservableResource):
     # render observe resource, get rendered on every state update (notify())
     async def render_get(self, request):
         print("rendering get")
-        payload = ("{\"appId\":\"LED\",\"data\":{\"color\":\"" + self.color + "\"},\"messageType\":\"CFG_SET\"}").encode("ascii")
+        payload = ("\"{\\\"appId\\\":\\\"LED\\\",\\\"data\\\":{\\\"color\\\":\\\"" + self.color + "\\\"},\\\"messageType\\\":\\\"CFG_SET\\\"}\"").encode("ascii")
         # payload = datetime.datetime.now().strftime("%Y-%m-%d %H:%M").encode('ascii')
         return aiocoap.Message(payload=payload)
 

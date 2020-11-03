@@ -32,19 +32,20 @@ async def processData(data):
         await database.DBConnector(conn).execute(query)
 
 # connects to db, saves a connector to the http app dict
-async def init_db(app):
-    connection = await aiomysql.connect(
-        host='localhost',# db',
+async def init_db(app, loop):
+    connection = await aiomysql.create_pool(
+        host='db',# db',
         user='root',
         password='1324',
-        db='db')
+        db='db',
+        loop=loop)
     if connection:
         print("got database connection:" + str(connection))
     app['db'] = connection
 
 # creates all tables necessary for this application if not yet present
 async def setup_db(app):
-    conn = app['db']
+    conn = await app['db'].acquire()
     cur = await conn.cursor()
     try:
         queries = []
@@ -167,7 +168,7 @@ class LedResource(resource.ObservableResource):
     async def render_get(self, request):
         print("rendering get")
         payload = ("{\"appId\":\"LED\",\"data\":{\"color\":\"" + self.color + "\"},\"messageType\":\"CFG_SET\"}").encode("ascii")
-        # payload = datetime.datetime.now().strftime("%Y-%m-%d %H:%M").encode('ascii') 
+        # payload = datetime.datetime.now().strftime("%Y-%m-%d %H:%M").encode('ascii')
         return aiocoap.Message(payload=payload)
 
 # used for testing, works
@@ -227,7 +228,7 @@ cors.add(http_app.router.add_get('/thingy_status', thingy_status))
 
 # setup event loop for http
 loop = asyncio.get_event_loop()
-loop.run_until_complete(init_db(http_app))
+loop.run_until_complete(init_db(http_app, loop))
 loop.run_until_complete(setup_db(http_app))
 
 # create http site task

@@ -168,8 +168,9 @@ class LedResource(resource.ObservableResource):
 
     # render observe resource, get rendered on every state update (notify())
     async def render_get(self, request):
-        print("rendering get")
-        payload = ("\"{\\\"appId\\\":\\\"LED\\\",\\\"data\\\":{\\\"color\\\":\\\"" + self.color + "\\\"},\\\"messageType\\\":\\\"CFG_SET\\\"}\"").encode("ascii")
+        print("rendering get with COLOR:")
+        print(self.color)
+        payload = ("{\"appId\":\"LED\",\"data\":{\"color\":\"" + self.color + "\"},\"messageType\":\"CFG_SET\"}").encode("ascii")
         # payload = datetime.datetime.now().strftime("%Y-%m-%d %H:%M").encode('ascii')
         return aiocoap.Message(payload=payload)
 

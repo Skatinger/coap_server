@@ -210,12 +210,12 @@
         <div class="row">
           <!-- <div class="col s12"> -->
             <ul class="tabs mytabs light-blue accent-3">
-              <li class="tab col s2 white-text"><a href="#temperature" class="active white-text">Temperature [°C]</a></li>
-              <li class="tab col s2"><a class="white-text" href="#humidity">Humidity</a></li>
-              <li class="tab col s2"><a class="white-text" href="#air_pressure">Air Pressure</a></li>
-              <li class="tab col s2"><a class="white-text" href="#co2">CO2</a></li>
-              <li class="tab col s2 disabled"><a class="white-text disabled" href="#gps">GPS</a></li>
-              <li class="tab col s2 disabled"><a class="white-text disabled" href="#flip">Flip</a></li>
+              <li class="tab col s2 white-text"><a href="#temp" class="active white-text">Temperature [°C]</a></li>
+              <li class="tab col s2"><a class="white-text" href="#humid">Humidity</a></li>
+              <li class="tab col s2"><a class="white-text" href="#air_press">Air Pressure</a></li>
+              <li class="tab col s2 disabled"><a class="white-text disabled tooltip" data-tooltip="not available right now" href="#co2">CO2</a></li>
+              <li class="tab col s2 disabled"><a class="white-text disabled tooltip" data-tooltip="not available right now" href="#gps">GPS</a></li>
+              <li class="tab col s2 disabled"><a class="white-text disabled tooltip" data-tooltip="not available right now" href="#flip">Flip</a></li>
             </ul>
           <!-- </div> -->
           <div id="temp" class="tab-content col s12" style="height: 400px;"></div>
@@ -223,6 +223,7 @@
           <div id="air_press" class="tab-content col s12" style="height: 400px;"></div>
           <div id="co2" class="tab-content col s12" style="height: 400px;"></div>
           <li id="gps" class="tab-content col s12" style="height: 400px;"><a class="white-text">Whatever</a></li>
+          <li id="flip" class="tab-content col s12" style="height: 400px;"><a class="white-text">Whatever</a></li>
         </div>
 
       </div>
@@ -271,9 +272,9 @@
       let xAxis = [];
       let yAxis = [];
       $.each(data, function(index, element){
-        console.log(element);
+        // console.log(element);
         xAxis.push(element["time"]);
-        yAxis.push(element["celcius"]);
+        yAxis.push(element["value"]);
       });
 
       return [{x: xAxis, y: yAxis, type: 'scatter'}];
@@ -284,10 +285,10 @@
         url: "/thingy_status",
         type: "GET",
         success: function(res){
-          console.log("GOT RES:");
-          console.log(res);
+          // console.log("GOT RES:");
+          // console.log(res);
           if(res["online"]){
-            console.log("doing this");
+            // console.log("doing this");
             $(".btn.status").addClass("online");
             $(".btn.status").text("Connected");
             $(".mybtn").removeClass("disabled");
@@ -321,30 +322,32 @@
     }
 
     function plotData(container, data){
+      // console.log("DATA IS:");
       console.log(data);
       if($("#" + container).hasClass("initialized")){
-        console.log("inited");
+        // console.log("inited");
         let $container = $("#" + container);
         $container[0].data[0].x = data[0].x;
         $container[0].data[0].y = data[0].y;
         Plotly.redraw(container);
       } else {
-        console.log("ELSE");
+        // console.log("ELSE");
         $("#" + container).html("");
         $("#" + container).addClass("initialized");
+        // console.
         Plotly.newPlot(container, data);
       }
     }
 
     $(document).ready(function() {
       $('.tabs').tabs();
+      $('.tooltip').tooltip({"outDuration": 0});
 
       $(".tab-content").html(getPreloader());
 
-      let measurements = []; // TODO add this again['temp', 'humid'];
+      let measurements = ['temp', 'humid', 'air_press'];
 
       updateThingyStatus();
-      console.log(measurements);
 
       $.each(measurements, function(index, measurement){
         $("#" + measurement).html(getPreloader());

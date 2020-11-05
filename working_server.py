@@ -22,7 +22,7 @@ obs_count = 0
 
 
 async def processData(data):
-    opts = ['TEMP', 'HUMID', 'AIR_PRESS', 'LIGHT']
+    opts = ['TEMP', 'HUMID', 'AIR_PRESS']
     data = ast.literal_eval(data) # allows to parse json with single quotes
     if data["appId"] and data["appId"] in opts:
         date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

@@ -4,24 +4,26 @@ volumes:
   cache: # win10 docker support
 
 services:
-  app:
-    build:
-      context: ./
-      dockerfile: ./Dockerfile
-    depends_on:
-      - db
-    volumes:
-      - ./:/app
-    ports:
-      - 3000:3000 # # response test script
-      - 4100:8080 #
-      - 4101:8081
-      - 5683:5683/udp # coap app
-    command: python response_test.py # tail -F anything # python run_server.py # bash
+  # this service will run, but not properly parse udp ipv6 messages
+  # run the app native on the machine
+  # app:
+  #   build:
+  #     context: ./
+  #     dockerfile: ./Dockerfile
+  #   depends_on:
+  #     - db
+  #   volumes:
+  #     - ./:/app
+  #   ports:
+  #     - 3000:3000 # # response test script
+  #     - 4100:4100
+  #     - 4101:8081 # response_test
+  #     - 5683:5683/udp # coap app
+  #   command: python response_test.py
 
 
   db:
-    image: x11tete11x/arm32v7-mysql #mysql:8.0.16
+    image: mysql:8.0.16 #x11tete11x/arm32v7-mysql #mysql:8.0.16
     ports:
       - 3306:3306
     environment:

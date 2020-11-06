@@ -1,0 +1,5 @@
+aiohttp
+aiocoap
+aiohttp-cors
+aiomysql
+cbor2

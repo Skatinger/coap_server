@@ -1,3 +1,5 @@
+# small web app to test if server is up
+
 from aiohttp import web
 
 async def handle(request):

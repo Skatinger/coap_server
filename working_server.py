@@ -13,7 +13,7 @@ import ast
 import random
 from aiohttp import web
 import database
-
+import cbor2
 # define global variable to store LedResource instance to call its notify function
 # cant use the class instance directly as it has to be initialized in a server context
 led_resource = None
@@ -21,15 +21,15 @@ led_resource = None
 obs_count = 0
 
 
-async def processData(data):
-    opts = ['TEMP', 'HUMID', 'AIR_PRESS']
-    data = ast.literal_eval(data) # allows to parse json with single quotes
-    if data["appId"] and data["appId"] in opts:
-        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        query = 'INSERT INTO `db`.`{}` (`value`, `time`) VALUES ({}, "{}")'.format(data["appId"].lower(), data["data"], date)
-        conn = http_app['db']
-        print(query)
-        await database.DBConnector(conn).execute(query)
+async def processData(type, data):
+    # opts = ['TEMP', 'HUMID', 'AIR_PRESS']
+    # data = ast.literal_eval(data) # allows to parse json with single quotes
+    # if data["appId"] and data["appId"] in opts:
+    date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    query = 'INSERT INTO `db`.`{}` (`value`, `time`) VALUES ({}, "{}")'.format(type, data, date)
+    conn = http_app['db']
+    print(query)
+    await database.DBConnector(conn).execute(query)
 
 # connects to db, saves a connector to the http app dict
 async def init_db(app, loop):
@@ -141,6 +141,50 @@ class CustomResource(resource.Resource):
         self.set_content( request.payload )
         return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
 
+class TempResource(resource.Resource):
+    def __init__(self):
+        super().__init__()
+        
+    async def render_put(self, request):
+        print("ugly print")
+        print(request.payload)
+        val = cbor2.loads(request.payload) 
+        print("temp value is:")
+        print(val)
+        await processData('temp', val)
+        self.content = request.payload
+        return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
+
+class AirPressResource(resource.Resource):
+    def __init__(self):
+        super().__init__()
+
+    async def render_put(self, request):
+        print("ugly print")
+        print(request.payload)
+        val = cbor2.loads(request.payload)
+        print("air press value is:")
+        print(val)
+        await processData('air_press', val)
+        self.content = request.payload
+        return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
+
+class HumidResource(resource.Resource):
+    def __init__(self):
+        super().__init__()
+
+    async def render_put(self, request):
+        print("ugly print")
+        print(request.payload)
+        val = cbor2.loads(request.payload)
+        print("humid value is:")
+        print(val)
+        await processData('humid', val)
+        self.content = request.payload
+        return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
+
+
+
 class LedResource(resource.ObservableResource):
     """Example resource that can be observed. The `notify` method keeps
     scheduling itself, and calles `update_state` to trigger sending
@@ -170,7 +214,13 @@ class LedResource(resource.ObservableResource):
     async def render_get(self, request):
         print("rendering get with COLOR:")
         print(self.color)
-        payload = ("{\"appId\":\"LED\",\"data\":{\"color\":\"" + self.color + "\"},\"messageType\":\"CFG_SET\"}").encode("ascii")
+        #payload = ("{\"appId\":\"LED\",\"data\":{\"color\":\"" + self.color + "\"},\"messageType\":\"CFG_SET\"}").encode("ascii")
+        color_as_int = int(self.color, 16)
+        print("integer is: ")
+        print(color_as_int)
+        payload = cbor2.dumps(color_as_int)
+        print("will render payload: ")
+        print(payload)
         # payload = datetime.datetime.now().strftime("%Y-%m-%d %H:%M").encode('ascii')
         return aiocoap.Message(payload=payload)
 
@@ -244,6 +294,9 @@ root.add_resource(['.well-known', 'core'],
 root.add_resource(['testing'], CustomResource())
 root.add_resource(['led'], LedResource())
 root.add_resource(['time'], TimeResource())
+root.add_resource(['temp'], TempResource())
+root.add_resource(['humid'], HumidResource())
+root.add_resource(['air_press'], AirPressResource())
 
 # creates a context to all addresses on the default coap port
 asyncio.Task(aiocoap.Context.create_server_context(root))

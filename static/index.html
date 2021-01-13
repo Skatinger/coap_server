@@ -132,8 +132,8 @@
                     let color = $("#range-field").val().substring(1);
                     // send ajax request
                     $.ajax({
-                      url: '/update_led/' + color,
-                      type: 'GET',
+                      url: '/led/' + color,
+                      type: 'POST',
                       success: function(res){
                         // materialize toast
                         $(".progress").hide();

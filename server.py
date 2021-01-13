@@ -91,7 +91,7 @@ async def thingy_status(request):
 
 # receives hexcolor, notifies ledResource (ObservableResource)
 async def update_led(request):
-    color = request.match_info.get('hexcolor')
+    color = request.json()['hexcolor']
     led_resource.notify(color)
     return web.json_response({'color': color})
 
@@ -188,7 +188,7 @@ cors = aiohttp_cors.setup(http_app, defaults={
 })
 # add http resources
 cors.add(http_app.router.add_get('/', index))
-cors.add(http_app.router.add_get('/update_led/{hexcolor}', update_led))
+cors.add(http_app.router.add_post('/led/{hexcolor}', update_led))
 cors.add(http_app.router.add_get('/measurement/{measurement}', get_measurment))
 cors.add(http_app.router.add_get('/thingy_status', thingy_status))
 

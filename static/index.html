@@ -132,8 +132,9 @@
                     let color = $("#range-field").val().substring(1);
                     // send ajax request
                     $.ajax({
-                      url: '/led/' + color,
+                      url: '/led',
                       type: 'POST',
+	              data: JSON.stringify({"hexcolor": color}),
                       success: function(res){
                         // materialize toast
                         $(".progress").hide();
